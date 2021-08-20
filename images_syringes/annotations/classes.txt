@@ -1,2 +1,2 @@
-syringe
-plunger
+dirty
+clean
