@@ -1,6 +1,8 @@
+from capture_images import activateCamera
 from guizero import App, Text, TextBox, PushButton, Slider, Picture, Combo, Box, info, Window
 from time import sleep
 import time
+import detect_picamera
 import serial
 
 try:
@@ -33,6 +35,13 @@ def start_process():
             ser.write("20\n".encode('utf-8')) #write a duration command to arduino start washing
             line = response_message("washing completed") #arduino will send a message once washing is done
             #ML FUNCTION run here
+            while(line=="washing completed"):
+                activateCamera("saved_image.jpg")
+                if(detect_picamera.annotateImage()):
+                    break
+                ser.flush
+                ser.write("20\n".encode('utf-8'))
+                
             if line == "washing completed": #Start sterilizing process once ack is recieved
                 home_message.value = "Sterilizing..."
                 app.update()
@@ -46,6 +55,7 @@ def start_process():
                         home_message.value = "Drying completed"
                         app.update()
                         extend_drying()#Call method extend drying process
+        
                             
     else:
         process_message.value = ""
