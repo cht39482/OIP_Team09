@@ -57,8 +57,7 @@ def start_process():
                         home_message.value = "Drying completed"
                         app.update()
                         extend_drying()#Call method extend drying process
-        
-                            
+                    
     else:
         process_message.value = ""
         Fan_speed.value = 0
