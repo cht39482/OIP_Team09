@@ -37,7 +37,7 @@ def start_process():
             #ML FUNCTION run here
             while(line=="washing completed"):
                 activateCamera()
-                if(detect_picamera.annotateImage("saved_image.jpg")):
+                if(detect_picamera.predictClass("saved_image.jpg")):
                     break
                 else:
                     ser.flush
