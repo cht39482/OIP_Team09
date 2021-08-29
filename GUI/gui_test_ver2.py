@@ -36,11 +36,13 @@ def start_process():
             line = response_message("washing completed") #arduino will send a message once washing is done
             #ML FUNCTION run here
             while(line=="washing completed"):
-                activateCamera("saved_image.jpg")
-                if(detect_picamera.annotateImage()):
+                activateCamera()
+                if(detect_picamera.annotateImage("saved_image.jpg")):
                     break
-                ser.flush
-                ser.write("20\n".encode('utf-8'))
+                else:
+                    ser.flush
+                    ser.write("20\n".encode('utf-8'))
+                    line = response_message("washing completed") #arduino will send a message once washing is done
                 
             if line == "washing completed": #Start sterilizing process once ack is recieved
                 home_message.value = "Sterilizing..."
