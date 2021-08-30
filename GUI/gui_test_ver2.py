@@ -1,4 +1,3 @@
-from capture_images import activateCamera
 from guizero import App, Text, TextBox, PushButton, Slider, Picture, Combo, Box, info, Window
 from time import sleep
 import time
@@ -15,6 +14,7 @@ app = App(title="Basin Washer", width=800, height=480, bg = "#F5F5F5")
 app2 = App(title="Process running", width=800, height=480, bg = "#F5F5F5")
 #timer = False
 app2.hide()
+state_process = 0
 
 
 def selection():
@@ -32,26 +32,42 @@ def start_process():
         line = ser.readline().decode('utf-8').rstrip()#Read ack from arduino to start washing process
         if line == "ok": #if ack recieved
             ser.flush()
-            ser.write("20\n".encode('utf-8')) #write a duration command to arduino start washing
+            ser.write("10\n".encode('utf-8')) #write a duration command to arduino start washing
+            line = response_message("start")
+            if line == "start":
+                countdown2(10)
+            home_message.value = "Rinsing..."
+            app.update()
             line = response_message("washing completed") #arduino will send a message once washing is done
             #ML FUNCTION run here
+            n = 0
             while(line=="washing completed"):
-                activateCamera()
-                if(detect_picamera.predictClass("saved_image.jpg")):
-                    break
+                detect_picamera.activateCamera()
+                if(detect_picamera.annotateImage("./classification-images/clean/IMG_20210824_155141.jpg")):
+                    print("Syringe is clean")
+                    ser.write("True\n".encode('utf-8'))
+                    n = n + 1
+                    if n==2:
+                        break
                 else:
+                    print("Syringe is still dirty")
                     ser.flush
-                    ser.write("20\n".encode('utf-8'))
-                    line = response_message("washing completed") #arduino will send a message once washing is done
-                
+                    ser.write("False\n".encode('utf-8'))
+                    line = response_message("washing completed") #arduino will send a message once washing is done    
             if line == "washing completed": #Start sterilizing process once ack is recieved
                 home_message.value = "Sterilizing..."
                 app.update()
+                line = response_message("start")
+                if line == "start":
+                    countdown2(10)
                 line = response_message("sterilization completed")#Awaiting ack from arduino to start the next drying process
                 if line == "sterilization completed":#Check if ack is received
                     home_message.value = "Drying..."
                     app.update()
-                    ser.write("20\n".encode('utf-8'))#write a duration command to aduino start drying
+                    ser.write("10\n".encode('utf-8'))#write a duration command to aduino start drying
+                    line = response_message("start")
+                    if line == "start":
+                        countdown2(10)
                     line = response_message("drying completed")#awaiting ack
                     if line == "drying completed":#check if ack is recieved
                         home_message.value = "Drying completed"
@@ -63,6 +79,26 @@ def start_process():
         Fan_speed.value = 0
         app.error("Exiting..", "Okay bye...")
         app.show()
+        
+def countdown2(t):
+    state_process += 1
+    if state_process == 1:
+        process == "Washing"
+    if state_process == 2:
+        process == "Sterilizing"
+    if state_process == 3:
+        process == "Drying"
+        
+    while t:
+        mins, secs = divmod(t, 60)
+        timer = '{:02d}:{:02d}'.format(mins, secs)
+        #timer_message.value = "Drying process running.."
+        print(timer, end="\r")
+        #app2.info("Timer", "Drying will end in " + timer)
+        home_message.value = process +" wii finish by " + timer + "secs..."
+        app.update()
+        time.sleep(1)
+        t -= 1
         
 def response_message(value): #Serial communication to wait for message from arduino
     while True:
@@ -81,7 +117,8 @@ def start_sterilizing():
             ser.flush()
             home_message.value = "Sterilizing..."
             app.update()
-            line = response_message("sterilization completed")#awaiting ack from arduino on the completion 
+            line = response_message("sterilization completed")#awaiting ack from arduino on the completion
+             
             if line == "sterilization completed":#check if ack is received
                 home_message.value = "Drying..."
                 app.update()
